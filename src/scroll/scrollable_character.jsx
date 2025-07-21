@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { findAnimationByName, transitionAnimation, detectAnimations } from '../scroll';
 
 export function ScrollableScene({ 
-  modelUrl = '/models/man.glb', 
+  modelUrl = 'public/models/man.glb', 
   scrollProgress = 0, 
   isActivelyScrolling = false,
   onCameraRef = null // New prop to pass camera ref to parent
