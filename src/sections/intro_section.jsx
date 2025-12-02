@@ -18,7 +18,7 @@ export function IntroSection() {
         className={`text-center transition-opacity duration-1000 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
       >
         <h1 className="text-8xl font-bold mb-4 text-white">Hello</h1>
-        <p className="text-xl text-white opacity-80 mt-4">Welcome to my portfolio</p>
+        <p className="text-xl text-white opacity-80 mt-4">My name is Nalin Joshi</p>
       </div>
     </section>
   );
