@@ -46,7 +46,7 @@ function TreeWithFauna({ id, modelPath, position, targetProgress, scrollProgress
   const [isOpen, setIsOpen] = useState(false); 
   const [hovered, setHovered] = useState(false);
 
-  // 🚀 ADDED: Mobile check
+  // 🚀 ADDED: Mobile checkd
   const { size } = useThree();
   const isMobile = size.width < 768;
 
