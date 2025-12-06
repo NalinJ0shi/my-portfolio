@@ -1,25 +1,23 @@
 import { useState, useEffect } from 'react';
 
-export function SkillsSection({ scrollProgress }) {
+export function SkillsSection({ scrollProgress, isSectionActive }) {
   const [isVisible, setIsVisible] = useState(false);
   
-  // Show section when scroll progress reaches a certain threshold
+  // Visibility is now controlled by the cube click
   useEffect(() => {
-    if (scrollProgress > 0.25 && scrollProgress < 0.55) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [scrollProgress]);
+    setIsVisible(isSectionActive);
+  }, [isSectionActive]);
   
   const skills = [
     "React", "Three.js", "JavaScript", "3D Modeling", "Tailwind CSS", "WebGL"
   ];
   
   return (
-    <section className="h-screen flex items-center justify-end pt-16 relative z-10">
+    // pointer-events-none allows clicks to pass through empty space
+    <section className="h-screen flex items-center justify-end pt-16 relative z-10 pointer-events-none">
       <div 
-        className={`bg-opacity-75 p-6 rounded-lg max-w-lg mr-10 transition-all duration-700 ease-in-out ${
+        // pointer-events-auto restores interactions for the content box
+        className={`bg-opacity-75 p-6 rounded-lg max-w-lg mr-10 transition-all duration-700 ease-in-out pointer-events-auto ${
           isVisible 
             ? 'opacity-100 translate-x-0' 
             : 'opacity-0 translate-x-20'

@@ -1,14 +1,14 @@
 import { useRef, useState, useEffect } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber'; // 🚀 ADDED useThree
 import { useGLTF, useAnimations, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import { findAnimationByName, transitionAnimation, detectAnimations } from '../scroll';
+import { transitionAnimation } from '../scroll';
 
 export function ScrollableScene({ 
-  modelUrl = 'models/Man.glb', 
+  modelUrl = '/models/man.glb', 
   scrollProgress = 0, 
   isActivelyScrolling = false,
-  onCameraRef = null // New prop to pass camera ref to parent
+  onCameraRef = null 
 }) {
   const group = useRef();
   const { scene, animations } = useGLTF(modelUrl);
@@ -17,6 +17,10 @@ export function ScrollableScene({
   const cameraRef = useRef();
   const pathRef = useRef();
   
+  // 🚀 ADDED: Mobile check
+  const { size } = useThree();
+  const isMobile = size.width < 768; 
+  
   // Pass camera ref to parent component
   useEffect(() => {
     if (onCameraRef && cameraRef.current) {
@@ -24,14 +28,29 @@ export function ScrollableScene({
     }
   }, [onCameraRef, cameraRef.current]);
   
-  // Preload the model
+  // --- 🔧 THE INVISIBLE MAN FIX ---
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.frustumCulled = false;
+        if (child.material) {
+          child.material.transparent = false;
+          child.material.opacity = 1;
+          child.material.depthWrite = true;
+          child.material.side = THREE.FrontSide;
+          child.material.needsUpdate = true;
+        }
+      }
+    });
+  }, [scene]);
+
+  // Preload
   useEffect(() => {
     useGLTF.preload(modelUrl);
   }, [modelUrl]);
   
-  // Create a path for the character to follow
+  // Path
   useEffect(() => {
-    // Simple path - can be replaced with a more complex curve
     pathRef.current = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(5, 0, 5),
@@ -41,96 +60,100 @@ export function ScrollableScene({
     ]);
   }, []);
 
-  // Switch animations based on scroll and active scrolling state
+  // --- ANIMATION LOGIC ---
   useEffect(() => {
     if (!actions || animations.length < 2) return;
-  
-    // Get animation names
-    const detectedAnimations = detectAnimations(animations);
-    const idleAnim = detectedAnimations.idle || animations[0].name;
-    const walkAnim = detectedAnimations.walk || (animations.length > 1 ? animations[1].name : animations[0].name);
-    
-    if (scrollProgress > 0.05 && isActivelyScrolling) {
-      // If scrolling and not already walking
-      if (currentAnimation !== walkAnim) {
-        transitionAnimation(actions, currentAnimation, walkAnim, 0.5);
-        setCurrentAnimation(walkAnim);
-      }
+    const idleAnim = 'idle';
+    const walkAnim = 'walk';
+    const waveAnim = 'wave';
+    let nextAnim = idleAnim;
+
+    if (scrollProgress < 0.05) {
+      nextAnim = waveAnim;
+    } else if (isActivelyScrolling) {
+      nextAnim = walkAnim;
     } else {
-      // If not scrolling and not already idle
-      if (currentAnimation !== idleAnim) {
-        transitionAnimation(actions, currentAnimation, idleAnim, 0.5);
-        setCurrentAnimation(idleAnim);
+      nextAnim = idleAnim;
+    }
+
+    if (currentAnimation !== nextAnim) {
+      if (actions[nextAnim]) {
+        transitionAnimation(actions, currentAnimation, nextAnim, 0.2);
+        setCurrentAnimation(nextAnim);
+      } else {
+        if (nextAnim === waveAnim && currentAnimation !== idleAnim) {
+            transitionAnimation(actions, currentAnimation, idleAnim, 0.2);
+            setCurrentAnimation(idleAnim);
+        }
       }
     }
   }, [actions, animations, scrollProgress, currentAnimation, isActivelyScrolling]);
 
-  // Start with idle animation
+  // Initial setup
   useEffect(() => {
     if (actions && animations.length > 0) {
-      // Use helper to find animation names
-      const detectedAnimations = detectAnimations(animations);
-      
-      // Start with idle animation if available, otherwise use first animation
-      const idleAnimation = detectedAnimations.idle || animations[0].name;
-      actions[idleAnimation]?.reset().play();
-      setCurrentAnimation(idleAnimation);
+      const startAnim = actions['wave'] ? 'wave' : 'idle';
+      if (actions[startAnim]) {
+          actions[startAnim].reset().play();
+          setCurrentAnimation(startAnim);
+      }
     }
   }, [actions, animations]);
 
-  // Position character and camera based on scroll
+  // Camera & Character Movement
   useFrame(() => {
     if (!group.current || !pathRef.current || !cameraRef.current) return;
 
-    // Move character along the path based on scroll progress
     if (scrollProgress > 0) {
+      // 1. CHARACTER MOVEMENT
       const position = pathRef.current.getPoint(scrollProgress);
       group.current.position.set(position.x, position.y, position.z);
 
-      // Calculate the tangent to make the character face the direction of movement
       if (scrollProgress > 0.01) {
-        const lookAtPoint = pathRef.current.getPoint(
-          Math.min(scrollProgress + 0.01, 1)
-        );
-        const direction = new THREE.Vector3()
-          .subVectors(lookAtPoint, position)
-          .normalize();
-        
+        const lookAtPoint = pathRef.current.getPoint(Math.min(scrollProgress + 0.01, 1));
+        const direction = new THREE.Vector3().subVectors(lookAtPoint, position).normalize();
         if (direction.length() > 0) {
-          const lookAtTarget = new THREE.Vector3()
-            .addVectors(position, direction);
+          const lookAtTarget = new THREE.Vector3().addVectors(position, direction);
           group.current.lookAt(lookAtTarget);
         }
       }
 
-      // Camera revolution around the model
-      const cameraDistance = Math.max(6, 4 + scrollProgress * 2); // Minimum distance of 6, grows with scroll
-      const cameraHeight = 1.8 + scrollProgress * 3; // Height increases with scroll
-      
-      // Calculate revolution angle (0 to 2π for full circle)
-      // Start from behind (π radians) and do full revolution to front (0 radians)
-      const revolutionAngle = Math.PI - (scrollProgress * 2 * Math.PI);
-      
-      // Calculate camera position using circular motion
-      const targetCameraPosition = new THREE.Vector3(
-        group.current.position.x + Math.cos(revolutionAngle) * cameraDistance,
-        group.current.position.y + cameraHeight,
-        group.current.position.z + Math.sin(revolutionAngle) * cameraDistance
-      );
-      
-      // Initial camera position
-      const initialCameraPosition = new THREE.Vector3(5, 8, 10);
-      
-      // Blend between initial position and revolution position
-      const finalCameraPosition = scrollProgress < 0.15
-        ? initialCameraPosition
-        : targetCameraPosition;
-      
-      // Smooth transition to target position
-      cameraRef.current.position.lerp(finalCameraPosition, 0.02);
-      
-      // Make camera look at character
-      cameraRef.current.lookAt(group.current.position);
+      // 2. CAMERA LOGIC
+      if (isActivelyScrolling) {
+        // --- A. The "Follow" Target Settings (Used after 20%) ---
+        // 🚀 CHANGED: Use 14 for mobile, 7 for laptop
+        const cameraDistance = isMobile ? 14 : 7;
+        
+        const rawHeight = 4.0 + scrollProgress * 2;
+        const targetY = Math.max(5.0, group.current.position.y + rawHeight);
+
+        const revolutionAngle = Math.PI - (scrollProgress * 2 * Math.PI);
+        
+        const targetCameraPosition = new THREE.Vector3(
+          group.current.position.x + Math.cos(revolutionAngle) * cameraDistance,
+          targetY, 
+          group.current.position.z + Math.sin(revolutionAngle) * cameraDistance
+        );
+        
+        // --- B. The "Intro" Start Settings (Used before 10%) ---
+        const initialCameraPosition = new THREE.Vector3(5, 8, 10);
+        
+        // --- C. The Blend (Transition from 10% to 20%) ---
+        const blendStart = 0.10;
+        const blendEnd = 0.20;
+        const blendFactor = THREE.MathUtils.clamp(
+          (scrollProgress - blendStart) / (blendEnd - blendStart), 
+          0, 
+          1
+        );
+
+        // Mix the positions
+        const mixedTarget = new THREE.Vector3().lerpVectors(initialCameraPosition, targetCameraPosition, blendFactor);
+        
+        // Apply position
+        cameraRef.current.position.lerp(mixedTarget, 0.01);
+        cameraRef.current.lookAt(group.current.position);
+      }
     }
   });
 

@@ -9,6 +9,7 @@ import { ContactSection } from './sections/contact_section';
 import { ScrollIndicator } from './scroll/scroll_indicator';
 import { CameraCoordinatesDisplay } from './scroll/camera_cordinates_display';
 import LoadingScreen from './scroll/loadingscreen';
+import { SectionCubes } from './SectionCubes';
 
 function App() {
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -17,28 +18,26 @@ function App() {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [showContent, setShowContent] = useState(false);
   const scrollTimeout = useRef(null);
+  const [activeSectionId, setActiveSectionId] = useState(null);
   
-  // Set the void color - a very dark purple matching the first image
-  const voidColor = "#617969ff"; // Very dark purple/almost black
+  const voidColor = "#617969ff"; 
   
-  // Handle background initialization sequence
+  // Loading Sequence
   useEffect(() => {
     let timer;
     let phase = 0;
     const phases = [
-      () => setLoadingProgress(30), // Model loading
+      () => setLoadingProgress(30),
       () => {
-        // Phase 1: Scroll to 2.1%
-        setScrollProgress(0.021);
+        // 🚀 CHANGED: Reduced wake-up movement to 1% (0.01)
+        setScrollProgress(0.0021);
         setLoadingProgress(60);
       },
       () => {
-        // Phase 2: Scroll back to 0%
         setScrollProgress(0);
         setLoadingProgress(90);
       },
       () => {
-        // Phase 3: Complete loading
         setLoadingProgress(100);
       }
     ];
@@ -47,45 +46,33 @@ function App() {
       if (phase < phases.length) {
         phases[phase]();
         phase++;
-        timer = setTimeout(runPhase, 800); // 800ms between phases
+        timer = setTimeout(runPhase, 800); 
       }
     };
 
-    // Start the sequence
     timer = setTimeout(runPhase, 500);
-
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle model loaded callback
-  const handleModelLoaded = () => {
-    // Model is loaded, continue with scroll sequence
-  };
-
-  // Handle loading completion
   const handleLoadingComplete = () => {
     setShowContent(true);
   };
   
-  // Handle scroll events
+  // --- SCROLL HANDLER ---
   useEffect(() => {
-    if (!showContent) return; // Don't handle scroll until content is shown
+    if (!showContent) return; 
     
     const handleScroll = () => {
-      // Calculate scroll progress (0 to 1)
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
       const progress = Math.min(window.scrollY / totalHeight, 1);
       setScrollProgress(progress);
       
-      // Set actively scrolling to true
       setIsActivelyScrolling(true);
       
-      // Clear any existing timeout
       if (scrollTimeout.current) {
         clearTimeout(scrollTimeout.current);
       }
       
-      // Set a timeout to detect when scrolling stops
       scrollTimeout.current = setTimeout(() => {
         setIsActivelyScrolling(false);
       }, 150);
@@ -100,21 +87,19 @@ function App() {
     };
   }, [showContent]);
 
-  // Callback to receive camera ref from ScrollableScene
   const handleCameraRef = (ref) => {
     setCameraRef(ref);
   };
 
   return (
-    <div className="min-h-[500vh] text-white" style={{ backgroundColor: voidColor, transition: 'background-color 0.5s ease' }}>
-      {/* Loading Screen */}
+    <div className="min-h-[1500vh] text-white" style={{ backgroundColor: voidColor, transition: 'background-color 0.5s ease' }}>
+      
       <LoadingScreen 
         progress={loadingProgress} 
         isComplete={loadingProgress >= 100} 
         onComplete={handleLoadingComplete} 
       />
       
-      {/* Main Content */}
       <div className={`transition-opacity duration-1000 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
         <div className="fixed inset-0">
           <Canvas>
@@ -124,22 +109,15 @@ function App() {
                 isActivelyScrolling={isActivelyScrolling}
                 modelUrl="/models/man.glb"
                 onCameraRef={handleCameraRef}
-                onModelLoaded={handleModelLoaded}
-              />
+              />       
               
-              {/* Enhanced lighting for the scene */}
+              <SectionCubes scrollProgress={scrollProgress} onCubeClick={setActiveSectionId} /> 
+              
               <ambientLight intensity={0.3} />
               <directionalLight position={[10, 10, 5]} intensity={0.8} color="#e2e2ff" />
-              <spotLight 
-                position={[0, 10, 0]} 
-                intensity={0.8} 
-                angle={0.6} 
-                penumbra={0.5} 
-                castShadow 
-                color="#f6e3ff" 
-              />
+              <spotLight position={[0, 10, 0]} intensity={0.8} angle={0.6} penumbra={0.5} castShadow color="#f6e3ff" />
+              <pointLight position={[-5, 5, 5]} intensity={1.5} distance={20} color="#c7faff" />
               
-              {/* Ground plane */}
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
                 <planeGeometry args={[1000, 1000]} />
                 <meshStandardMaterial 
@@ -154,20 +132,15 @@ function App() {
           </Canvas>
         </div>
         
-        {/* Camera Coordinates Display */}
-        <CameraCoordinatesDisplay 
-          cameraRef={cameraRef} 
-          scrollProgress={scrollProgress} 
-        />
+        {/* <CameraCoordinatesDisplay cameraRef={cameraRef} scrollProgress={scrollProgress} /> */}
         
-        {/* Content sections */}
+        {/* Pass active flags to sections */}
         <IntroSection />
-        <AboutSection scrollProgress={scrollProgress} />
-        <SkillsSection scrollProgress={scrollProgress} />
-        <ProjectsSection scrollProgress={scrollProgress} />
-        <ContactSection scrollProgress={scrollProgress} />
+        <AboutSection scrollProgress={scrollProgress} isSectionActive={activeSectionId === 2 || activeSectionId === 3} />
+        <SkillsSection scrollProgress={scrollProgress} isSectionActive={activeSectionId === 4 || activeSectionId === 5} />
+        <ProjectsSection scrollProgress={scrollProgress} isSectionActive={activeSectionId === 6 || activeSectionId === 7} />
+        <ContactSection scrollProgress={scrollProgress} isSectionActive={activeSectionId === 8 || activeSectionId === 9} />
         
-        {/* Scroll indicator */}
         <ScrollIndicator isVisible={scrollProgress < 0.05} />
         
       </div>
