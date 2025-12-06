@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber'; // 🚀 ADDED useThree
 import { useGLTF, useAnimations, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { transitionAnimation } from '../scroll';
@@ -17,9 +17,9 @@ export function ScrollableScene({
   const cameraRef = useRef();
   const pathRef = useRef();
   
-  // 📱 Check for Mobile
+  // 🚀 ADDED: Mobile check
   const { size } = useThree();
-  const isMobile = size.width < 768;
+  const isMobile = size.width < 768; 
   
   // Pass camera ref to parent component
   useEffect(() => {
@@ -121,7 +121,7 @@ export function ScrollableScene({
       // 2. CAMERA LOGIC
       if (isActivelyScrolling) {
         // --- A. The "Follow" Target Settings (Used after 20%) ---
-        // If the wide FOV makes the character too small, reduce '14' to '10' or '12' here.
+        // 🚀 CHANGED: Use 14 for mobile, 7 for laptop
         const cameraDistance = isMobile ? 14 : 7;
         
         const rawHeight = 4.0 + scrollProgress * 2;
@@ -163,8 +163,7 @@ export function ScrollableScene({
         ref={cameraRef}
         makeDefault
         position={[5, 8, 10]}
-        // 🚀 CHANGED: Wider FOV (75) on mobile to see more, Normal (50) on laptop
-        fov={isMobile ? 75 : 50}
+        fov={50}
       />
       <primitive ref={group} object={scene} scale={1} />
     </>
