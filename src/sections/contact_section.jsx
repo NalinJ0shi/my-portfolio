@@ -21,7 +21,6 @@ export function ContactSection({ scrollProgress }) {
             : 'opacity-0 scale-95'
         }`}
       >
-        <h2 className="text-4xl font-bold mb-4 text-white">Connect With Me</h2>
       </div>
     </section>
   );
