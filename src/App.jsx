@@ -137,7 +137,7 @@ function App() {
           </Canvas>
         </div>
         
-        <CameraCoordinatesDisplay cameraRef={cameraRef} scrollProgress={scrollProgress} />
+        {/* <CameraCoordinatesDisplay cameraRef={cameraRef} scrollProgress={scrollProgress} /> */}
         
         <IntroSection />
         <AboutSection scrollProgress={scrollProgress} isSectionActive={activeSectionId === 2 || activeSectionId === 3} />
