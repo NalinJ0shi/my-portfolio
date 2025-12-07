@@ -9,19 +9,15 @@ import * as THREE from 'three';
 const SECTION_TEXTS = {
   // ABOUT SECTION
   2: { title: "About Me", subsections: ["My Story", "Philosophy", "Background"] },
-  3: { title: "My Vision", subsections: ["Future", "Goals", "Creativity"] },
-
-  // SKILLS SECTION
-  4: { title: "Tech Stack", subsections: ["React", "Three.js", "Node"] },
-  5: { title: "Design", subsections: ["Blender", "Figma", "UI/UX"] },
-
+  
+  // SKILLS SECTION (Renamed from Tech Stack)
+  4: { title: "Skills", subsections: ["React", "Three.js", "Node"] },
+  
   // PROJECTS SECTION
   6: { title: "Projects", subsections: ["Mobile", "Web", "Game Dev"] },
-  7: { title: "Recent", subsections: ["The Last Gate", "Portfolio", "Demos"] },
-
+  
   // CONTACT SECTION
   8: { title: "Contact", subsections: ["Email", "LinkedIn", "Twitter"] },
-  9: { title: "Socials", subsections: ["GitHub", "Instagram", "Discord"] },
 };
 
 // -----------------------------------------------------------------

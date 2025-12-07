@@ -119,40 +119,42 @@ export function ScrollableScene({
       }
 
       // 2. CAMERA LOGIC
-      if (isActivelyScrolling) {
-        // --- A. The "Follow" Target Settings (Used after 20%) ---
-        // 🚀 CHANGED: Use 14 for mobile, 7 for laptop
-        const cameraDistance = isMobile ? 14 : 7;
+      if (isActivelyScrolling || scrollProgress > 0) {
         
-        const rawHeight = 4.0 + scrollProgress * 2;
-        const targetY = Math.max(5.0, group.current.position.y + rawHeight);
+        // --- A. Define Standard "Chase" Offset (No Rotation) ---
+        // This places the camera 5 units right, 5 units up, 5 units back relative to the character
+        // You can tweak these numbers to change the fixed angle.
+        const chaseOffset = new THREE.Vector3(5, 5, 5); 
+        
+        // Calculate where the camera should be based on character position
+        const targetCameraPosition = new THREE.Vector3()
+          .copy(group.current.position)
+          .add(chaseOffset);
 
-        const revolutionAngle = Math.PI - (scrollProgress * 2 * Math.PI);
-        
-        const targetCameraPosition = new THREE.Vector3(
-          group.current.position.x + Math.cos(revolutionAngle) * cameraDistance,
-          targetY, 
-          group.current.position.z + Math.sin(revolutionAngle) * cameraDistance
-        );
-        
-        // --- B. The "Intro" Start Settings (Used before 10%) ---
-        const initialCameraPosition = new THREE.Vector3(5, 8, 10);
-        
-        // --- C. The Blend (Transition from 10% to 20%) ---
-        const blendStart = 0.10;
-        const blendEnd = 0.20;
-        const blendFactor = THREE.MathUtils.clamp(
-          (scrollProgress - blendStart) / (blendEnd - blendStart), 
-          0, 
-          1
-        );
+        // --- B. Intro Blend (0% to 10%) ---
+        // Smoothly transition from the specific "Intro" coordinates to our "Chase" coordinates
+        const initialCameraPosition = new THREE.Vector3(5, 8, 10); // Your starting position
+        const blendFactor = THREE.MathUtils.clamp(scrollProgress / 0.1, 0, 1); // 0 to 1 over first 10%
 
-        // Mix the positions
-        const mixedTarget = new THREE.Vector3().lerpVectors(initialCameraPosition, targetCameraPosition, blendFactor);
+        const finalPosition = new THREE.Vector3().lerpVectors(initialCameraPosition, targetCameraPosition, blendFactor);
         
-        // Apply position
-        cameraRef.current.position.lerp(mixedTarget, 0.01);
+        // Apply Position
+        cameraRef.current.position.lerp(finalPosition, 0.1);
         cameraRef.current.lookAt(group.current.position);
+
+        // --- C. Dynamic FOV (Starts increasing after 10%) ---
+        const baseFov = 50;
+        const maxFov = 75; // Target FOV to see more environment
+        
+        let targetFov = baseFov;
+        if (scrollProgress > 0.1) {
+           // Normalize progress from 0.1 to 1.0 -> 0 to 1
+           const fovProgress = (scrollProgress - 0.1) / 0.9; 
+           targetFov = THREE.MathUtils.lerp(baseFov, maxFov, fovProgress);
+        }
+
+        cameraRef.current.fov = THREE.MathUtils.lerp(cameraRef.current.fov, targetFov, 0.05);
+        cameraRef.current.updateProjectionMatrix();
       }
     }
   });

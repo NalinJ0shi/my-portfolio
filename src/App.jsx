@@ -20,16 +20,15 @@ function App() {
   const scrollTimeout = useRef(null);
   const [activeSectionId, setActiveSectionId] = useState(null);
   
-  const voidColor = "#617969ff"; 
+  // 🚀 FIXED: This single color controls Sky, Fog, and Floor for a seamless look
+  const voidColor = "#c7ecc7"; 
   
-  // Loading Sequence
   useEffect(() => {
     let timer;
     let phase = 0;
     const phases = [
       () => setLoadingProgress(30),
       () => {
-        // 🚀 CHANGED: Reduced wake-up movement to 1% (0.01)
         setScrollProgress(0.0021);
         setLoadingProgress(60);
       },
@@ -58,7 +57,6 @@ function App() {
     setShowContent(true);
   };
   
-  // --- SCROLL HANDLER ---
   useEffect(() => {
     if (!showContent) return; 
     
@@ -92,6 +90,7 @@ function App() {
   };
 
   return (
+    // 1. HTML Background matches voidColor
     <div className="min-h-[1500vh] text-white" style={{ backgroundColor: voidColor, transition: 'background-color 0.5s ease' }}>
       
       <LoadingScreen 
@@ -104,6 +103,12 @@ function App() {
         <div className="fixed inset-0">
           <Canvas>
             <Suspense fallback={null}>
+              {/* 2. 3D Sky matches voidColor */}
+              <color attach="background" args={[voidColor]} />
+
+              {/* 3. Fog matches voidColor (This hides the line!) */}
+              <fog attach="fog" args={[voidColor, 10, 60]} /> 
+
               <ScrollableScene 
                 scrollProgress={scrollProgress} 
                 isActivelyScrolling={isActivelyScrolling}
@@ -132,9 +137,8 @@ function App() {
           </Canvas>
         </div>
         
-        {/* <CameraCoordinatesDisplay cameraRef={cameraRef} scrollProgress={scrollProgress} /> */}
+        <CameraCoordinatesDisplay cameraRef={cameraRef} scrollProgress={scrollProgress} />
         
-        {/* Pass active flags to sections */}
         <IntroSection />
         <AboutSection scrollProgress={scrollProgress} isSectionActive={activeSectionId === 2 || activeSectionId === 3} />
         <SkillsSection scrollProgress={scrollProgress} isSectionActive={activeSectionId === 4 || activeSectionId === 5} />
